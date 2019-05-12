@@ -127,7 +127,7 @@ Here is an example **FetchXMLFile** file containing queries that we recommend fo
 </FetchXMLQueries>
  ```
 
-Once you're able to export your data above. Add this extra statement to import the reference data to a target tenant. Make sure you change the **ConnectionString** and **TransformXMLFile** parameters to match your target environment.
+Once you're able to export your data above. Add this extra statement to import the reference data to a target tenant. Make sure you change the **ConnectionString** and **TransformFile** parameters to match your target environment.
 ```powershell
 # Import Dynamics Data
 Import-DynamicsData `

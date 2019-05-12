@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.Crm.Sdk.Messages;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Extensions;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
@@ -333,7 +334,7 @@ namespace Veritec.Dynamics.CI.Common
                 try
                 {
                     /* check if record already exists*/
-                    targetEntity = OrganizationService.Retrieve(curEntity.LogicalName, curEntity.Id, GetColumnSet(entityMetaData));
+                    targetEntity = OrganizationService.Retrieve(curEntity.LogicalName, curEntity.Id, GetColumnSet(entityMetaData, curEntity.Attributes));
                 }
                 catch
                 {
@@ -367,13 +368,33 @@ namespace Veritec.Dynamics.CI.Common
                             curEntity.Attributes.Remove(Constant.TransactionCurrency.ExchangeRate);
                         }
 
-                        debugInfo = "Updating";
-                        OrganizationService.Update(curEntity);
+                        if (TargetSameAsSource(curEntity, targetEntity))
+                        {
+                            debugInfo = "Skipping Update";
+                        }
+                        else
+                        {
+                            debugInfo = "Updating";
+                            OrganizationService.Update(curEntity);
+                        }
                     }
                     else
                     {
-                        debugInfo = "Inserting";
-                        OrganizationService.Create(curEntity);
+                        
+                        if (curEntity.Attributes.ContainsKey("statecode") && ((OptionSetValue)curEntity.Attributes["statecode"]).Value  == 1) //inactive
+                        {
+                            /* user trying to insert inactive record */
+                            /* need to create first then update to inactive */
+                            debugInfo = "Inserting Inactive";
+                            OrganizationService.Create(new Entity(curEntity.LogicalName, curEntity.Id));
+                            OrganizationService.Update(curEntity);
+                        }
+                        else
+                        {
+                            debugInfo = "Inserting";
+                            OrganizationService.Create(curEntity);
+                        }
+                        
                     }
                 }
                 Logger?.Invoke(this, (targetEntity == null ? "Inserted" : "Updated") + ": " + CommonUtility.GetUserFriendlyMessage(curEntity));
@@ -390,7 +411,24 @@ namespace Veritec.Dynamics.CI.Common
             return importedSuccessfully;
         }
 
-        private static ColumnSet GetColumnSet(EntityMetadata entityMetaData)
+        private bool TargetSameAsSource(Entity sourceEntity, Entity targetEntity)
+        {
+            foreach (var sourceAttribute in sourceEntity.Attributes)
+            {
+                // make sure all attributes exist in target that are in source
+                if (!targetEntity.Attributes.Keys.Contains(sourceAttribute.Key))
+                    targetEntity.Attributes.Add(sourceAttribute.Key, null);
+
+                // do the comparison
+                if (!targetEntity.Attributes.Contains(sourceAttribute))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static ColumnSet GetColumnSet(EntityMetadata entityMetaData, AttributeCollection sourceAttributeCollection)
         {
             if (entityMetaData == null)
                 return new ColumnSet(false);
@@ -400,7 +438,11 @@ namespace Veritec.Dynamics.CI.Common
                 entityMetaData.LogicalName.Equals(Constant.Workflow.EntityLogicalName, StringComparison.OrdinalIgnoreCase))
 
                 return new ColumnSet(Constant.Entity.StateCode, Constant.Entity.StatusCode);
-            return new ColumnSet(false);
+
+            if (sourceAttributeCollection.Count > 0)
+                return new ColumnSet(sourceAttributeCollection.Keys.ToArray());
+            else
+                return new ColumnSet(false);
         }
 
         private bool UpsertDocumentTemplate(Entity curEntity, Entity targetEntity,
@@ -699,7 +741,7 @@ namespace Veritec.Dynamics.CI.Common
                                 select new ForeignKeyInfo
                                 {
                                     Id = new Guid(a.Value.ToString()),
-                                    LogicalName = a.Key.Substring(0, a.Key.LastIndexOf("id", StringComparison.Ordinal) + 2),
+                                    LogicalName = a.Key.Substring(0, a.Key.LastIndexOf("id", StringComparison.Ordinal)),
                                     FieldName = a.Key
                                 };
 
