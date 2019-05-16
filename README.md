@@ -41,25 +41,30 @@ Use the below PowerShell to export your solution from Dynamics 365. Make sure yo
 # Reference PowerShell module
 import-module "C:\VSRC\Veritec.Dynamics.CI\Veritec.Dynamics.CI.PowerShell\bin\Release\Veritec.Dynamics.CI.PowerShell.dll"
  
-# Prompt user for Username and Password
-$currentUser = Get-Credential -Message "Dynamics Credentials:"
+#### 1. Office 365 Method for logging in
+$currentUser = Get-Credential -UserName "youruser@yourorg.onmicrosoft.com" -Message "D365 Credentials:"
 $userName = $currentUser.UserName
-$encryptedPwd = $currentUser.GetNetworkCredential().Password | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString
+$password = $currentUser.GetNetworkCredential().Password
+
+$connectString =  "AuthType=Office365;Url=https://yourorg.crm6.dynamics.com;UserName=$userName;Password=$password"
+
+#### 2. S2S method Method for logging in (Note: AppId requires an app registration in Azure AD.)
+#$connectString = "AuthType=OAuth;Url=https://yourorg.crm6.dynamics.com;AppId=yourAppIDGuid;UserName=youruser@yourorg.onmicrosoft.com;RedirectUri=https://yourorg.crm6.dynamics.com;LoginPrompt=Always;TokenCacheStorePath=c:\temp\mytoken"
  
 # Export Dynamics Solution from source
 Export-DynamicsSolution `
-    -ConnectionString "IsOffice365=True;Username=$userName;Region=Oceania;OrganizationName=dynamicsorgname" `
-    -SolutionName "Solution1;Solution2" `
-    -EncryptedPassword $encryptedPwd
+          -ConnectionString $connectString `
+          -SolutionName "Solution1;Solution2;" `
+          -SolutionDir "..\LocalSolutionDirectory" `
 ```
 Add this extra statement to import the solution to your target tenant. Make sure you change the **ConnectionString** to match your target environment
 
 ```powershell
 # Import Dynamics Solution to target
 Import-DynamicsSolution `
-    -ConnectionString "IsOffice365=True;Username=$userName;Region=Oceania;OrganizationName=dynamicsorgname;" `
-    -SolutionName "Solution1;Solution2" `
-    -EncryptedPassword $encryptedPwd
+          -ConnectionString $connectString `
+          -SolutionName "Solution1;Solution2" `
+          -SolutionDir "..\LocalSolutionDirectory" `
 ```
 
 ##  Export & Import Dynamics 365 Data
@@ -69,9 +74,9 @@ Use the below PowerShell to export your reference data from Dynamics 365. Make s
 ```powershell
 # Export Dynamics Data
 Export-DynamicsData `
-    -ConnectionString "IsOffice365=True;Username=$userName;Region=Oceania;OrganizationName=dynamicsorgname;" `
-    -EncryptedPassword $encryptedPwd `
-    -FetchXMLFile "FetchXMLQueries.xml"
+      -ConnectionString $connectString `
+      -FetchXMLFile ".\FetchXMLQueries.xml" `
+      -OutputDataPath ".\ReferenceData"    
 ```
 Here is an example **FetchXMLFile** file containing queries that we recommend for every single Dynamics 365 solution migration as a minimum. Save this file to disk and reference it in the above PowerShell. It will export the data for "business units", "currencies" and "teams".
 
@@ -134,6 +139,11 @@ Import-DynamicsData `
     -ConnectionString "IsOffice365=True;Username=$userName;Region=Oceania;OrganizationName=dynamicsorgname;" `
     -EncryptedPassword $encryptedPwd `
     -TransformFile "transforms.json"
+
+Import-DynamicsData `
+    -ConnectionString $connectString `
+    -TransformFile "transforms.json" `
+    -InputDataPath ".\ReferenceData"
 ```
 The Transform file is used to modify your data to be inserted into your target environment. This is useful when:
 
@@ -173,58 +183,64 @@ Example PowerShell to export Dynamics Solution and Reference Data. Notice how th
 # Reference PowerShell module
 import-module "C:\VSRC\Veritec.Dynamics.CI\Veritec.Dynamics.CI.PowerShell\bin\Release\Veritec.Dynamics.CI.PowerShell.dll"
  
-# Prompt user for Username and Password
-$currentUser = Get-Credential -Message "Source Dynamics Credentials:"
+#### 1. Office 365 Method for logging in
+$currentUser = Get-Credential -UserName "youruser@yourorg.onmicrosoft.com" -Message "D365 Credentials:"
 $userName = $currentUser.UserName
-$encryptedPwd = $currentUser.GetNetworkCredential().Password | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString
+$password = $currentUser.GetNetworkCredential().Password
+
+$connectString =  "AuthType=Office365;Url=https://yourorg.crm6.dynamics.com;UserName=$userName;Password=$password"
+
+#### 2. S2S method Method for logging in (Note: AppId requires an app registration in Azure AD.)
+#$connectString = "AuthType=OAuth;Url=https://yourorg.crm6.dynamics.com;AppId=yourAppIDGuid;UserName=youruser@yourorg.onmicrosoft.com;RedirectUri=https://yourorg.crm6.dynamics.com;LoginPrompt=Always;TokenCacheStorePath=c:\temp\mytoken"
  
 # Export Dynamics Solutions from source
 Export-DynamicsSolution `
-    -ConnectionString "IsOffice365=True;Username=$userName;Region=Oceania;OrganizationName=dynamicsorgname;" `
-    -SolutionName "Solution1;Solution2" `
-    -EncryptedPassword $encryptedPwd
+    -ConnectionString $connectString `
+    -SolutionName "Solution1;Solution2;" `
+    -SolutionDir "..\LocalSolutionDirectory" `
  
 # Export Dynamics Data Pre Solution
 Export-DynamicsData `
-    -ConnectionString "IsOffice365=True;Username=$userName;Region=Oceania;OrganizationName=dynamicsorgname;" `
-    -EncryptedPassword $encryptedPwd `
-    -FetchXMLFile "FetchXMLQueriesPre.xml" `
-    -OutputDataPath "SourceDataPre"
+      -ConnectionString $connectString `
+      -FetchXMLFile ".\FetchXMLQueriesPre.xml" `
+      -OutputDataPath ".\SourceDataPre"    
  
 # Export Dynamics Data Post Solution
 Export-DynamicsData `
-    -ConnectionString "IsOffice365=True;Username=$userName;Region=Oceania;OrganizationName=dynamicsorgname;" `
-    -EncryptedPassword $encryptedPwd `
-    -FetchXMLFile "FetchXMLQueriesPost.xml" `
-    -OutputDataPath "SourceDataPost"
+      -ConnectionString $connectString `
+      -FetchXMLFile ".\FetchXMLQueriesPost.xml" `
+      -OutputDataPath ".\SourceDataPost"    
 ```
 Example PowerShell to import the above exported Dynamics Solution and Reference Data
 ```powershell
 # Reference PowerShell module
 import-module "C:\VSRC\Dynamics 365 Practice\Veritec.Dynamics.CI\Veritec.Dynamics.CI.PowerShell\bin\Release\Veritec.Dynamics.CI.PowerShell.dll"
  
-# Prompt user for Username and Password
-$currentUser = Get-Credential -Message "Target Dynamics Credentials:"
+#### 1. Office 365 Method for logging in
+$currentUser = Get-Credential -UserName "youruser@yourorg.onmicrosoft.com" -Message "D365 Credentials:"
 $userName = $currentUser.UserName
-$encryptedPwd = $currentUser.GetNetworkCredential().Password | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString
+$password = $currentUser.GetNetworkCredential().Password
+
+$connectString =  "AuthType=Office365;Url=https://yourorg.crm6.dynamics.com;UserName=$userName;Password=$password"
+
+#### 2. S2S method Method for logging in (Note: AppId requires an app registration in Azure AD.)
+#$connectString = "AuthType=OAuth;Url=https://yourorg.crm6.dynamics.com;AppId=yourAppIDGuid;UserName=youruser@yourorg.onmicrosoft.com;RedirectUri=https://yourorg.crm6.dynamics.com;LoginPrompt=Always;TokenCacheStorePath=c:\temp\mytoken"
  
 # Import Dynamics Data Pre
 Import-DynamicsData `
-    -ConnectionString "IsOffice365=True;Username=$userName;Region=Oceania;OrganizationName=dynamicsorgname;" `
-    -EncryptedPassword $encryptedPwd `
+    -ConnectionString $connectString `
     -TransformFile "transforms.json" `
-    -InputDataPath "SourceDataPre"
+    -InputDataPath ".\SourceDataPre"
  
 # Import Dynamics Solutions to target
 Import-DynamicsSolution `
-    -ConnectionString "IsOffice365=True;Username=$userName;Region=Oceania;OrganizationName=dynamicsorgname;" `
-    -SolutionName "Solution1;Solution2" `
-    -EncryptedPassword $encryptedPwd
- 
+          -ConnectionString $connectString `
+          -SolutionName "Solution1;Solution2" `
+          -SolutionDir "..\LocalSolutionDirectory" `
+
 # Import Dynamics Data Post
 Import-DynamicsData `
-    -ConnectionString "IsOffice365=True;Username=$userName;Region=Oceania;OrganizationName=dynamicsorgname;" `
-    -EncryptedPassword $encryptedPwd `
+    -ConnectionString $connectString `
     -TransformFile "transforms.json" `
-    -InputDataPath "SourceDataPost"
+    -InputDataPath ".\SourceDataPost"
 ```

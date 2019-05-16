@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net;
 using System.Security;
+using System.Text.RegularExpressions;
 
 namespace Veritec.Dynamics.CI.Common
 {
@@ -34,30 +35,22 @@ namespace Veritec.Dynamics.CI.Common
             return new TimeSpan(0, ConnectionTimeOutMinutes, 0);
         }
 
-        public CrmParameter(string connectionString, bool populateParameter = false)
+        public CrmParameter(string connectionString)
         {
-            // either connection string or individual parameter
-            if (populateParameter)
-                PopulateParameter(connectionString);
-            else
-                ConnectionString = connectionString;
+            ConnectionString = connectionString.Trim();
+            if (connectionString.EndsWith(";") == false)
+                ConnectionString = ConnectionString + ";";
+
+            var usernameMatch = Regex.Match(ConnectionString, "username=(?'username'.*?);", RegexOptions.IgnoreCase);
+            if (usernameMatch.Success)
+            {
+                UserName = usernameMatch.Groups["username"].Value;
+            }
         }
 
-        public void PopulateParameter(string connectionString)
+        public string GetConnectionStringObfuscated()
         {
-            var parameters = connectionString.Split(';').Select(s => s.Split('=')).ToDictionary(s => s.First().ToLower(), s => s.Last());
-
-            var fields = GetType().GetFields().ToDictionary(s => s.Name.ToLower(), s => s);
-
-            foreach (var curParameter in parameters)
-            {
-                var propertyName = curParameter.Key.Trim();
-                if (fields.ContainsKey(propertyName))
-                {
-                    var curField = fields[propertyName];
-                    curField.SetValue(this, Convert.ChangeType(curParameter.Value, curField.FieldType));
-                }
-            }
+            return Regex.Replace(ConnectionString, "Password.*=.*[;]", "Password=*******", RegexOptions.IgnoreCase);
         }
 
         public string GetSourcePkgDirectory()

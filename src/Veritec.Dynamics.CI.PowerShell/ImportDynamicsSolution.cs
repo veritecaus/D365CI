@@ -12,10 +12,6 @@ namespace Veritec.Dynamics.CI.PowerShell
     [OutputType(typeof(Boolean))]
     public class ImportDynamicsSolution : Cmdlet
     {
-        #region Input Paramaters
-
-        [Parameter(Mandatory = true)]
-        public string EncryptedPassword { get; set; }
 
         [Parameter(Mandatory = true)]
         public string ConnectionString { get; set; }
@@ -32,31 +28,20 @@ namespace Veritec.Dynamics.CI.PowerShell
         [Parameter(Mandatory = false)]
         public string SolutionDir { get; set; } = Directory.GetCurrentDirectory();
 
-        #endregion
-
         protected override void ProcessRecord()
         {
             try
             {
-                #region Initialise Paramaters
-
-                var cp = new CrmParameter(ConnectionString, true)
+                var crmParameter = new CrmParameter(ConnectionString)
                 {
-                    Password = CredentialTool.MakeSecurityString(EncryptedPassword)
-                };
-
-                var crmParameter = new CrmParameter(ConnectionString, true)
-                {
-                    Password = CredentialTool.MakeSecurityString(EncryptedPassword),
                     ConnectionTimeOutMinutes = ConnectionTimeOutMinutes
                 };
 
                 SolutionDir = SolutionDir + @"\";
                 crmParameter.ExecutionDirectory = SolutionDir;
-                #endregion
 
-                #region Connect to Dynamics
-                WriteObject($"Connecting ({ConnectionString}) ");
+                /* Connect to Dynamics */
+                WriteObject($"Connecting ({crmParameter.GetConnectionStringObfuscated()})");
 
                 SolutionTool solutionTool = null;
 
@@ -70,11 +55,9 @@ namespace Veritec.Dynamics.CI.PowerShell
                 }
 
                 var elapsed = $"{stopwatch.Elapsed.Minutes}min {stopwatch.Elapsed.Seconds}s";
-                WriteObject($" [{elapsed}] {Environment.NewLine}");
+                WriteObject($"Done... [{elapsed}]{Environment.NewLine}");
 
-                #endregion              
-
-                #region Import Solutions
+                /* Import Solutions */
                 var solutionNames = SolutionName.Split(';');
                 foreach (var sol in solutionNames)
                 {
@@ -101,10 +84,11 @@ namespace Veritec.Dynamics.CI.PowerShell
                     }
 
                     elapsed = $"{stopwatch.Elapsed.Minutes}min {stopwatch.Elapsed.Seconds}s";
-                    WriteObject($" [{elapsed}] {Environment.NewLine}");
+                    WriteObject($"Done... [{elapsed}]{Environment.NewLine}");
 
                     stopwatch = Stopwatch.StartNew();
                     WriteObject($"Publishing ");
+                    
                     /* publish solution */
                     var publishTask = solutionTool.PublishAsync();
 
@@ -115,10 +99,9 @@ namespace Veritec.Dynamics.CI.PowerShell
                     }
 
                     elapsed = $"{stopwatch.Elapsed.Minutes}min {stopwatch.Elapsed.Seconds}s";
-                    WriteObject($" [{elapsed}] {Environment.NewLine}");
-                    
+                    WriteObject($"Done... [{elapsed}]{Environment.NewLine}");
+
                 }
-                #endregion
             }
             catch (Exception ex)
             {

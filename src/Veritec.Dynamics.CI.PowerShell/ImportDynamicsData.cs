@@ -8,9 +8,6 @@ namespace Veritec.Dynamics.CI.PowerShell
     public class ImportDynamicsData : Cmdlet
     {
         [Parameter(Mandatory = true)]
-        public string EncryptedPassword { get; set; }
-
-        [Parameter(Mandatory = true)]
         public string ConnectionString { get; set; }
 
         [Parameter(Mandatory = true)]
@@ -21,19 +18,15 @@ namespace Veritec.Dynamics.CI.PowerShell
 
         protected override void ProcessRecord()
         {
-            WriteObject("Starting Import");
-            WriteObject("Connection String: " + ConnectionString);
             WriteObject("Transform File: " + TransformFile);
             WriteObject("Input Data Path: " + InputDataPath);
-            WriteObject("Encrypted Password: ***********");
 
-            var cp = new CrmParameter(ConnectionString, true)
+            var crmParameter = new CrmParameter(ConnectionString)
             {
-                Password = CredentialTool.MakeSecurityString(EncryptedPassword),
                 ExportDirectoryName = InputDataPath
             };
 
-            ExecuteImportData(cp, cp.GetSourceDataDirectory(), TransformFile);
+            ExecuteImportData(crmParameter, crmParameter.GetSourceDataDirectory(), TransformFile);
         }
 
         protected virtual void ExecuteImportData(CrmParameter crmParameter, string dataDir, string transformFileName)
@@ -43,7 +36,7 @@ namespace Veritec.Dynamics.CI.PowerShell
 
             WriteObject("Transfrom File: " + transformFileName);
 
-            WriteObject("Connecting to Dynamics...");
+            WriteObject($"Connecting ({crmParameter.GetConnectionStringObfuscated()})");
             var dataImport = new DataImport(crmParameter, transformFileName);
 
             dataImport.Logger += Feedback_Received;

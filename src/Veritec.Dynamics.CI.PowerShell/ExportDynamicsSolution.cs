@@ -11,11 +11,6 @@ namespace Veritec.Dynamics.CI.PowerShell
     [Cmdlet("Export", "DynamicsSolution")]
     public class ExportDynamicsSolution : Cmdlet
     {
-        #region Input Paramaters
-
-        [Parameter(Mandatory = true)]
-        public string EncryptedPassword { get; set; }
-
         [Parameter(Mandatory = true)]
         public string ConnectionString { get; set; }
 
@@ -31,33 +26,23 @@ namespace Veritec.Dynamics.CI.PowerShell
         [Parameter(Mandatory = false)]
         public string SolutionDir { get; set; } = Directory.GetCurrentDirectory();
 
-        #endregion
-
         protected override void ProcessRecord()
         {
             try
             {
-                #region Initialise Paramaters
-
-                var cp = new CrmParameter(ConnectionString, true)
+                var crmParameter = new CrmParameter(ConnectionString)
                 {
-                    Password = CredentialTool.MakeSecurityString(EncryptedPassword)
-                };
-
-                var crmParameter = new CrmParameter(ConnectionString, true)
-                {
-                    Password = CredentialTool.MakeSecurityString(EncryptedPassword),
                     ConnectionTimeOutMinutes = ConnectionTimeOutMinutes
                 };
 
                 SolutionDir = SolutionDir + @"\";
                 crmParameter.ExecutionDirectory = SolutionDir;
-                #endregion
 
-                #region Connect to Dynamics
-                WriteObject($"Connecting ({ConnectionString}) ");
+                /* Connect to Dynamics */
+                WriteObject($"Connecting ({crmParameter.GetConnectionStringObfuscated()})");
 
                 SolutionTool solutionTool = null;
+                solutionTool = new SolutionTool(crmParameter);
 
                 var stopwatch = Stopwatch.StartNew();
                 var taskInstantiateSolution = Task.Run(() => solutionTool = new SolutionTool(crmParameter));
@@ -79,11 +64,9 @@ namespace Veritec.Dynamics.CI.PowerShell
                 }
 
                 var elapsed = $"{stopwatch.Elapsed.Minutes}min {stopwatch.Elapsed.Seconds}s";
-                WriteObject($" [{elapsed}] {Environment.NewLine}");
+                WriteObject($"Done... [{elapsed}]{Environment.NewLine}");              
 
-                #endregion              
-
-                #region Export Solutions
+                /* Export Solutions */
                 if (!Directory.Exists(SolutionDir)) Directory.CreateDirectory(SolutionDir);
                 var solutionNames = SolutionName.Split(';');
                 foreach (var sol in solutionNames)
@@ -92,7 +75,6 @@ namespace Veritec.Dynamics.CI.PowerShell
                     stopwatch = Stopwatch.StartNew();
                     var fileName = SolutionDir + sol + (Managed ? "_managed" : "") + ".zip";
 
-                    WriteObject(Environment.NewLine);
                     WriteObject($"Downloading '{sol.ToUpper()}' solution ");
                     var solutionBinaryTask = solutionTool.ExportSolutionAsync(sol, Managed);
 
@@ -111,12 +93,10 @@ namespace Veritec.Dynamics.CI.PowerShell
                     }
                     else
                     {
-                        elapsed = $"{stopwatch.Elapsed.Minutes}min {stopwatch.Elapsed.Seconds}s";
-                        WriteObject($" [{elapsed}] {Environment.NewLine}");
-
                         WriteObject($"Saving file {fileName.ToUpper()} ");
+                        elapsed = $"{stopwatch.Elapsed.Minutes}min {stopwatch.Elapsed.Seconds}s";
                         File.WriteAllBytes(fileName, solutionBinaryTask.Result);
-                        WriteObject($"... [done]{Environment.NewLine}");
+                        WriteObject($"Done... [{elapsed}]{Environment.NewLine}");
 
                         if (crmParameter.ExtractSolutionContent)
                         {
@@ -128,7 +108,6 @@ namespace Veritec.Dynamics.CI.PowerShell
 
                 }
 
-                #endregion
             }
             catch (Exception ex)
             {

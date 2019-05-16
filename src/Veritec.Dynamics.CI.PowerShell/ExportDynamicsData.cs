@@ -8,9 +8,6 @@ namespace Veritec.Dynamics.CI.PowerShell
     public class ExportDynamicsData : Cmdlet
     {
         [Parameter(Mandatory = true)]
-        public string EncryptedPassword { get; set; }
-
-        [Parameter(Mandatory = true)]
         public string ConnectionString { get; set; }
 
         [Parameter(Mandatory = true)]
@@ -24,39 +21,34 @@ namespace Veritec.Dynamics.CI.PowerShell
 
         protected override void ProcessRecord()
         {
-            WriteObject("Starting Export");
-            WriteObject("Connection String: " + ConnectionString);
-            WriteObject("FetchXML File: " + FetchXmlFile);
-            WriteObject("Output Data Path: " + OutputDataPath);
-            WriteObject("Encrypted Password: ***********");
+            WriteObject("");
+            WriteObject($"FetchXML File: {FetchXmlFile}");
+            WriteObject($"Output Data Path: {OutputDataPath}{Environment.NewLine}");
 
-            var cp =
-                new CrmParameter(ConnectionString, true)
+            var crmParameter =
+                new CrmParameter(ConnectionString)
                 {
-                    Password = CredentialTool.MakeSecurityString(EncryptedPassword),
                     ExportDirectoryName = OutputDataPath
                 };
 
             var attributesToExcludeArray = AttributesToExclude?.Split(';');
 
-            string dataDir = cp.GetSourceDataDirectory();
+            string dataDir = crmParameter.GetSourceDataDirectory();
 
             FetchXmlFile = (string.IsNullOrWhiteSpace(FetchXmlFile) || FetchXmlFile == "NULL" ?
                 @"Veritec.Dynamics.DataMigrate.FetchQuery.xml" : FetchXmlFile);
 
-            WriteObject("Fetch Query source: " + Environment.CurrentDirectory + "\\" + FetchXmlFile);
+            WriteObject($"Connecting ({crmParameter.GetConnectionStringObfuscated()})");
+            var dataExport = new DataExport(crmParameter, FetchXmlFile);
 
-            WriteObject("Connecting to Dynamics...");
-            var dataExport = new DataExport(cp, FetchXmlFile);
-
-            WriteObject("Fetch queries loaded");
+            WriteObject($"Fetch queries loaded {Environment.NewLine}");
             foreach (var fetchXml in dataExport.FetchXmlQueries)
             {
                 WriteObject($"Executing Fetch Query: {fetchXml.Key}...");
 
                 var queryResultXml = dataExport.ExecuteFetchXmlQuery(fetchXml.Key, fetchXml.Value, attributesToExcludeArray);
 
-                WriteObject($"Writing Results: {dataDir}{fetchXml.Key}.xml");
+                WriteObject($"Writing Results: {dataDir}{fetchXml.Key}.xml {Environment.NewLine}");
                 DataExport.SaveFetchXmlQueryResulttoDisk(dataDir, fetchXml.Key, queryResultXml.ToString());
             }
         }
