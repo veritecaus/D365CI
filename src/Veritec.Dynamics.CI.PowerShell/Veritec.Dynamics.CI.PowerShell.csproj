@@ -60,6 +60,7 @@
     <Compile Include="ExportDynamicsData.cs" />
     <Compile Include="ExportDynamicsSolution.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SetAutoNumberSeed.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
