@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -15,6 +16,8 @@ namespace Veritec.Dynamics.CI.Common
 {
     public class SolutionTool : CiBase
     {
+        public event EventHandler<string> MessageLogger;
+
         public SolutionTool(string dynamicsConnectionString, int timeoutMinutes) : base(dynamicsConnectionString, timeoutMinutes)
         {
         }
@@ -226,41 +229,54 @@ namespace Veritec.Dynamics.CI.Common
 
                 Guid? asyncJobId = asyncResponse.AsyncJobId;
 
-                var end = DateTime.Now.AddMinutes(30);
-                while (end >= DateTime.Now)
+                var end = DateTime.Now.AddMinutes(CrmParameter.ConnectionTimeOutMinutes);
+                bool finished = false;
+
+                while (!finished)
                 {
+                    // Wait for 15 Seconds to prevent us overloading the server with too many requests
+                    Thread.Sleep(15 * 1000);
+
+                    if (end < DateTime.Now)
+                    {
+                        throw new Exception(($"Solution import has timed out: {CrmParameter.ConnectionTimeOutMinutes} minutes"));
+                    }
+
+                    Entity asyncOperation;
+
                     try
                     {
-                        Entity asyncOperation = OrganizationService.Retrieve("asyncoperation", asyncJobId.Value, new ColumnSet("asyncoperationid", Constant.Entity.StatusCode, "message"));
-                        var statusCode = asyncOperation.GetAttributeValue<OptionSetValue>(Constant.Entity.StatusCode).Value;
-                        var message = asyncOperation.GetAttributeValue<string>("message");
+                        asyncOperation = OrganizationService.Retrieve("asyncoperation", asyncJobId.Value, new ColumnSet("asyncoperationid", Constant.Entity.StatusCode, "message"));
 
-                        // Succeeded
-                        if (statusCode == 30)
-                        {
-                            break;
-                        }
-                        // Pausing // Canceling // Failed // Canceled
-
-                        if (statusCode == 21 || statusCode == 22 ||
-                            statusCode == 31 || statusCode == 32)
-                        {
-                            throw new Exception($"Solution Import Failed: {statusCode} {message}");
-                        }
-
-                        // Wait for 15 Seconds to prevent us overloading the server
-                        // with too many requests
-                        Thread.Sleep(15 * 1000);
                     }
                     catch (Exception e)
                     {
-                        // Unfortunately CRM Online seems to lock up the application when importing
-                        // Large Solutions, and thus it generates random errors. Mainly they are
-                        // SQL Client errors, but we can't guarantee this so as much as it isn’t very good
-                        // to just catch an exception and do nothing with it, we do have in this case
-                        if (e.Message.StartsWith("Solution Import Failed:"))
-                            throw;
+                        /* Unfortunately CRM Online seems to lock up the application when importing
+                         * Large Solutions, and thus it generates random errors. Mainly they are
+                         * SQL Client errors, but we can't guarantee this so we just catch them and report to user
+                         * then continue on. */
+
+                        MessageLogger?.Invoke(this, $"{e.Message}");
+                        continue;
                     }
+
+                    var statusCode = asyncOperation.GetAttributeValue<OptionSetValue>(Constant.Entity.StatusCode).Value;
+                    var message = asyncOperation.GetAttributeValue<string>("message");
+
+                    // Succeeded
+                    if (statusCode == 30)
+                    {
+                        finished = true;
+                        break;
+                    }
+                    // Pausing // Canceling // Failed // Canceled
+
+                    if (statusCode == 21 || statusCode == 22 ||
+                        statusCode == 31 || statusCode == 32)
+                    {
+                        throw new Exception($"Solution Import Failed: {statusCode} {message}");
+                    }
+
                 }
             }
             else
@@ -310,7 +326,7 @@ namespace Veritec.Dynamics.CI.Common
                 };
 
                 var extractionProcess = Process.Start(packagerParameter);
-                
+
                 // TODO: Make the wait time a configurable setting.
                 extractionProcess.WaitForExit(1800000); //1800sec
             }

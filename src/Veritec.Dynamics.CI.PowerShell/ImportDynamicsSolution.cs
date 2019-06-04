@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Management.Automation;
@@ -20,7 +22,7 @@ namespace Veritec.Dynamics.CI.PowerShell
         public string SolutionName { get; set; }
 
         [Parameter(Mandatory = false)]
-        public int ConnectionTimeOutMinutes { get; set; } = 10;
+        public int ConnectionTimeOutMinutes { get; set; } = 30;
 
         [Parameter(Mandatory = false)]
         public bool Managed { get; set; }
@@ -28,8 +30,14 @@ namespace Veritec.Dynamics.CI.PowerShell
         [Parameter(Mandatory = false)]
         public string SolutionDir { get; set; } = Directory.GetCurrentDirectory();
 
+        private ConcurrentQueue<string> MessageQueue { get; set; }
+        private object MessageLockToken { get; set; }
+
         protected override void ProcessRecord()
         {
+            MessageQueue = new ConcurrentQueue<string>();
+            MessageLockToken = new object();
+
             try
             {
                 var crmParameter = new CrmParameter(ConnectionString)
@@ -54,6 +62,8 @@ namespace Veritec.Dynamics.CI.PowerShell
                     Thread.Sleep(2000);
                 }
 
+                solutionTool.MessageLogger += ReceiveMessage;
+
                 var elapsed = $"{stopwatch.Elapsed.Minutes}min {stopwatch.Elapsed.Seconds}s";
                 WriteObject($"Done... [{elapsed}]{Environment.NewLine}");
 
@@ -72,6 +82,19 @@ namespace Veritec.Dynamics.CI.PowerShell
                     {
                         WriteVerbose(".");
                         Thread.Sleep(3000);
+
+                        /* check if any messages from the solution import thread 
+                         * have been passed back */
+                        while (true)
+                        {
+                            if (MessageQueue.Count == 0)
+                                break; // exit while
+
+                            var MessageFound = MessageQueue.TryDequeue(out string message);
+
+                            if (MessageFound)
+                                WriteObject(message);
+                        }
                     }
 
                     if (solutionBinaryTask.IsFaulted)
@@ -88,7 +111,7 @@ namespace Veritec.Dynamics.CI.PowerShell
 
                     stopwatch = Stopwatch.StartNew();
                     WriteObject($"Publishing ");
-                    
+
                     /* publish solution */
                     var publishTask = solutionTool.PublishAsync();
 
@@ -105,9 +128,14 @@ namespace Veritec.Dynamics.CI.PowerShell
             }
             catch (Exception ex)
             {
-                var errorRecord = new ErrorRecord(new Exception("Solution Import Failed",ex.InnerException), "", ErrorCategory.InvalidResult, null);
+                var errorRecord = new ErrorRecord(new Exception($"Solution Import Failed: {ex.Message}", ex.InnerException), "", ErrorCategory.InvalidResult, null);
                 ThrowTerminatingError(errorRecord);
             }
+        }
+
+        private void ReceiveMessage(object sender, string e)
+        {
+            MessageQueue.Enqueue(e);
         }
     }
 }

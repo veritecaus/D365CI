@@ -46,10 +46,10 @@ $currentUser = Get-Credential -UserName "youruser@yourorg.onmicrosoft.com" -Mess
 $userName = $currentUser.UserName
 $password = $currentUser.GetNetworkCredential().Password
 
-$connectString =  "AuthType=Office365;Url=https://yourorg.crm6.dynamics.com;UserName=$userName;Password=$password"
+$connectString =  "AuthType=Office365;Url=https://yourorg.crm6.dynamics.com;RequireNewInstance=True;UserName=$userName;Password=$password"
 
 #### 2. S2S method Method for logging in (Note: AppId requires an app registration in Azure AD.)
-#$connectString = "AuthType=OAuth;Url=https://yourorg.crm6.dynamics.com;AppId=yourAppIDGuid;UserName=youruser@yourorg.onmicrosoft.com;RedirectUri=https://yourorg.crm6.dynamics.com;LoginPrompt=Always;TokenCacheStorePath=c:\temp\mytoken"
+#$connectString = "AuthType=OAuth;Url=https://yourorg.crm6.dynamics.com;AppId=yourAppIDGuid;UserName=youruser@yourorg.onmicrosoft.com;RedirectUri=https://yourorg.crm6.dynamics.com;LoginPrompt=Always;TokenCacheStorePath=c:\temp\mytoken;RequireNewInstance=True;"
  
 # Export Dynamics Solution from source
 Export-DynamicsSolution `
@@ -136,7 +136,7 @@ Once you're able to export your data above. Add this extra statement to import t
 ```powershell
 # Import Dynamics Data
 Import-DynamicsData `
-    -ConnectionString "IsOffice365=True;Username=$userName;Region=Oceania;OrganizationName=dynamicsorgname;" `
+    -ConnectionString $connectString `
     -EncryptedPassword $encryptedPwd `
     -TransformFile "transforms.json"
 
@@ -188,10 +188,10 @@ $currentUser = Get-Credential -UserName "youruser@yourorg.onmicrosoft.com" -Mess
 $userName = $currentUser.UserName
 $password = $currentUser.GetNetworkCredential().Password
 
-$connectString =  "AuthType=Office365;Url=https://yourorg.crm6.dynamics.com;UserName=$userName;Password=$password"
+$connectString =  "AuthType=Office365;Url=https://yourorg.crm6.dynamics.com;RequireNewInstance=True;UserName=$userName;Password=$password"
 
 #### 2. S2S method Method for logging in (Note: AppId requires an app registration in Azure AD.)
-#$connectString = "AuthType=OAuth;Url=https://yourorg.crm6.dynamics.com;AppId=yourAppIDGuid;UserName=youruser@yourorg.onmicrosoft.com;RedirectUri=https://yourorg.crm6.dynamics.com;LoginPrompt=Always;TokenCacheStorePath=c:\temp\mytoken"
+#$connectString = "AuthType=OAuth;Url=https://yourorg.crm6.dynamics.com;AppId=yourAppIDGuid;UserName=youruser@yourorg.onmicrosoft.com;RedirectUri=https://yourorg.crm6.dynamics.com;LoginPrompt=Always;TokenCacheStorePath=c:\temp\mytoken;RequireNewInstance=True;"
  
 # Export Dynamics Solutions from source
 Export-DynamicsSolution `
@@ -221,7 +221,7 @@ $currentUser = Get-Credential -UserName "youruser@yourorg.onmicrosoft.com" -Mess
 $userName = $currentUser.UserName
 $password = $currentUser.GetNetworkCredential().Password
 
-$connectString =  "AuthType=Office365;Url=https://yourorg.crm6.dynamics.com;UserName=$userName;Password=$password"
+$connectString =  "AuthType=Office365;Url=https://yourorg.crm6.dynamics.com;RequireNewInstance=True;UserName=$userName;Password=$password"
 
 #### 2. S2S method Method for logging in (Note: AppId requires an app registration in Azure AD.)
 #$connectString = "AuthType=OAuth;Url=https://yourorg.crm6.dynamics.com;AppId=yourAppIDGuid;UserName=youruser@yourorg.onmicrosoft.com;RedirectUri=https://yourorg.crm6.dynamics.com;LoginPrompt=Always;TokenCacheStorePath=c:\temp\mytoken"
