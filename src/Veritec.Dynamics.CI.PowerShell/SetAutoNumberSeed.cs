@@ -35,7 +35,7 @@ namespace Veritec.Dynamics.CI.PowerShell
 
             WriteObject($"Connecting ({crmParameter.GetConnectionStringObfuscated()}{Environment.NewLine})");
 
-            var autoNumber = new Autonumber(crmParameter);
+            var autoNumber = new AutoNumber(crmParameter);
             try
             {
                 var recordCount = autoNumber.TargetEntityRowCount(EntityName, AttributeName);
@@ -47,7 +47,7 @@ namespace Veritec.Dynamics.CI.PowerShell
                 }
                 else
                 {
-                    WriteObject($"WARN - operation abandoned as the target entity contains at least {recordCount} records. Consider using the Force parameter.");
+                    WriteObject($"No action required to set the autonumber seed for {EntityName} because {recordCount} record(s) already exist.");
                 }
                
             }

@@ -4,9 +4,9 @@ using System;
 
 namespace Veritec.Dynamics.CI.Common
 {
-    public class Autonumber : CiBase
+    public class AutoNumber : CiBase
     {
-        public Autonumber(CrmParameter crmParameter) : base(crmParameter)
+        public AutoNumber(CrmParameter crmParameter) : base(crmParameter)
         {
 
         }
