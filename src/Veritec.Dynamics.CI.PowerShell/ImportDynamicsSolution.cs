@@ -31,12 +31,10 @@ namespace Veritec.Dynamics.CI.PowerShell
         public string SolutionDir { get; set; } = Directory.GetCurrentDirectory();
 
         private ConcurrentQueue<string> MessageQueue { get; set; }
-        private object MessageLockToken { get; set; }
 
         protected override void ProcessRecord()
         {
             MessageQueue = new ConcurrentQueue<string>();
-            MessageLockToken = new object();
 
             try
             {

@@ -33,7 +33,7 @@ namespace Veritec.Dynamics.CI.PowerShell
                 ConnectionTimeOutMinutes = ConnectionTimeOutMinutes
             };
 
-            WriteObject($"Connecting ({crmParameter.GetConnectionStringObfuscated()}{Environment.NewLine})");
+            WriteObject($"Connecting ({crmParameter.GetConnectionStringObfuscated()}){Environment.NewLine}");
 
             var autoNumber = new AutoNumber(crmParameter);
             try

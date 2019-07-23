@@ -253,3 +253,13 @@ Set-PluginStatus `
     -PluginStepNames 'PluginName1;PluginName2' `
     -setEnabled $true 
 ```
+
+## Set Auto Number
+Simple cmdlet to set the autonumber seed value. To keep this as a safe operation, the cmdlet will first ensure that there is no data present for the given entity. You can override this behaviour with the 'Force=$true' parameter
+```powershell
+Set-AutoNumberSeed `
+    -ConnectionString $connectString `
+    -EntityName 'example_entity' `
+    -AttributeName 'example_attribute' `
+    -Value '20050000'
+```
