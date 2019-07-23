@@ -46,8 +46,9 @@ namespace Veritec.Dynamics.CI.Common
                     TransformTargetEntityReferenceValue(sourceEntity, sourceAttribute, sourceValue);
                     break;
 
-                case object s when (s.GetType().IsPrimitive):
-                        
+                case object s when (s.GetType().IsPrimitive || s.GetType() == typeof(string)):
+                    // the IsPrimitive types are Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
+
                     var substituteValue = TransformObjectValue(sourceEntity.LogicalName, sourceAttribute, sourceValue);
 
                     if ( !substituteValue.ToString().Equals(sourceValue.ToString(), StringComparison.OrdinalIgnoreCase))

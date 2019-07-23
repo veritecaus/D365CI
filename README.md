@@ -1,7 +1,7 @@
 
 # Dynamics 365 Continuous Integration
 
-This project provides four PowerShell cmdlets that can be used to automate the importing and exporting of Dynamics 365 solutions and reference data.
+This project provides PowerShell cmdlets that can be used to automate the importing and exporting of Dynamics 365 solutions and reference data.
 
 Migrating Dynamics 365 solutions and reference data from one environment to another is not a trivial task. The Microsoft Dynamics team supply enough tools to get the basic job done, however if you've ever tried to achieve full automation for complex configurations then you'll know how complex and time consuming it can be.
 
@@ -243,4 +243,13 @@ Import-DynamicsData `
     -ConnectionString $connectString `
     -TransformFile "transforms.json" `
     -InputDataPath ".\SourceDataPost"
+```
+# Additional Actions
+##  Set Plugin Status
+The following cmdlet let's you enable or disable a plugin. The PluginStepNames is a semicolon delimited list of plugin names from the "SDK Message Processing Steps" section of the solution manager. Use $true or $false with the setEnabled parameter to enable/disable the plugins.
+```powershell
+Set-PluginStatus `
+    -ConnectionString $connectString `
+    -PluginStepNames 'PluginName1;PluginName2' `
+    -setEnabled $true 
 ```
