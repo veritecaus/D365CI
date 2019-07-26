@@ -30,7 +30,7 @@ namespace Veritec.Dynamics.CI.Common
 
             switch (sourceValue)
             {
-                case Guid _ :
+                case Guid _:
                     // these columns can never be mapped
                     if (sourceAttribute.Equals("address1_addressid") ||
                         sourceAttribute.Equals("address2_addressid") ||
@@ -42,7 +42,7 @@ namespace Veritec.Dynamics.CI.Common
                     TransformTargetGuidValue(sourceEntity, sourceAttribute, sourceValue);
                     break;
 
-                case EntityReference _ :
+                case EntityReference _:
                     TransformTargetEntityReferenceValue(sourceEntity, sourceAttribute, sourceValue);
                     break;
 
@@ -51,13 +51,13 @@ namespace Veritec.Dynamics.CI.Common
 
                     var substituteValue = TransformObjectValue(sourceEntity.LogicalName, sourceAttribute, sourceValue);
 
-                    if ( !substituteValue.ToString().Equals(sourceValue.ToString(), StringComparison.OrdinalIgnoreCase))
+                    if (!substituteValue.ToString().Equals(sourceValue.ToString(), StringComparison.OrdinalIgnoreCase))
                     {
                         sourceEntity[sourceAttribute] = substituteValue;
                         Console.WriteLine($"Column: {sourceAttribute}, Substitute Value: {substituteValue}");
                     }
                     break;
-            }            
+            }
         }
 
         private void TransformTargetEntityReferenceValue(Entity sourceEntity, string attributeName, object oldValue)
@@ -91,7 +91,7 @@ namespace Veritec.Dynamics.CI.Common
                 sourceEntity[attributeName] = oldEntityReference;
             }
         }
-        
+
         private string GetPrimaryNameAttribute(string entityName)
         {
             if (entityName.Equals(Constant.BusinessUnit.EntityLogicalName, StringComparison.OrdinalIgnoreCase) ||
@@ -224,7 +224,22 @@ namespace Veritec.Dynamics.CI.Common
                 _transformConfig.Transforms.Add(new Transform(Constant.Organization.EntityLogicalName, Constant.Organization.Id, "*", targetOrgInstanceInfo[0].Id.ToString()));
             }
             else
-                throw new Exception("What...? Organization record missing in Target Dynamics :(");
+                throw new Exception("Organization record missing in Target Dynamics");
+        }
+
+        public void ReplaceBUConstant(EntityCollection targetBUInfo)
+        {
+            if (targetBUInfo == null && targetBUInfo.Entities.Count != 1)
+                throw new Exception("Unable to detect root Business Unit");
+
+            foreach (var transform in _transformConfig.Transforms)
+            {
+                if (transform.ReplacementValue == Constant.TransformConstant.DESTINATIONROOTBU)
+                {
+                    transform.ReplacementValue = targetBUInfo.Entities[0].ToEntityReference().Id.ToString();
+                }
+            }
+
         }
 
         /// <summary>
@@ -354,7 +369,7 @@ namespace Veritec.Dynamics.CI.Common
                     // if the BU name and Role name match means it's same security role in target
                     if (sourceFsp.GetAttributeValue<string>(Constant.FieldSecurityProfile.Name).Equals(
                             targetFsp.GetAttributeValue<string>(Constant.FieldSecurityProfile.Name), StringComparison.OrdinalIgnoreCase))
-                    {                     
+                    {
                         _transformConfig.Transforms.Add(new Transform(Constant.FieldSecurityProfile.EntityLogicalName, Constant.FieldSecurityProfile.Id, sourceFsp.Id.ToString(), targetFsp.Id.ToString()));
                         //break; don't break - to confirm that there is not multiple record with matching name
                         matchCount++;
@@ -464,7 +479,7 @@ namespace Veritec.Dynamics.CI.Common
                         {
                             if (sourceTeamName.Equals(sourceBusinessUnit.Name, StringComparison.OrdinalIgnoreCase) &&
                                 targetTeam.GetAttributeValue<string>(Constant.Team.Name).Equals(targetBusinessUnit.Name, StringComparison.OrdinalIgnoreCase))
-                            {                              
+                            {
                                 _transformConfig.Transforms.Add(new Transform(Constant.Team.EntityLogicalName, Constant.Team.Id, sourceTeam.Id.ToString(), targetTeam.Id.ToString()));
 
                                 // make the team name in source same as target so that the default team of Root BU is NOT renamed!

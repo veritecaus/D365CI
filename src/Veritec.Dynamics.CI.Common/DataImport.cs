@@ -92,7 +92,9 @@ namespace Veritec.Dynamics.CI.Common
             // load metadata for all
             Logger?.Invoke(this, "\r\nLoading Metadata, Business Units and Teams from target systems...");
 
-            EntityCollection targetSystemUsers = null, targetOrgInstanceInfo = null;
+            EntityCollection targetSystemUsers = null;
+            EntityCollection targetOrgInstanceInfo = null;
+            EntityCollection targetBUInfo = null;
 
             // load all the system reference data from target
             Parallel.Invoke(
@@ -101,6 +103,10 @@ namespace Veritec.Dynamics.CI.Common
                 () => targetOrgInstanceInfo = targetDataLoader.GetAllEntity(Constant.Organization.EntityLogicalName,
                     new[] { Constant.Organization.Name }),
 
+                () => targetBUInfo = targetDataLoader.GetAllEntity(Constant.BusinessUnit.EntityLogicalName,
+                    new[] { Constant.BusinessUnit.Name }, LogicalOperator.And,
+                    new[] { new ConditionExpression(Constant.BusinessUnit.ParentBusinessUnitId, ConditionOperator.Null) }),
+
                 () => targetSystemUsers = targetDataLoader.GetAllEntity(Constant.User.EntityLogicalName,
                     new[] { Constant.User.DomainName }, LogicalOperator.And,
                     new[] { new ConditionExpression(Constant.User.DomainName, ConditionOperator.Equal, CrmParameter.UserName) })
@@ -108,6 +114,9 @@ namespace Veritec.Dynamics.CI.Common
 
             Logger?.Invoke(this, "\r\nPreparing data replacement for Target Organization Info...");
             _transformData.SetOrganizationId(targetOrgInstanceInfo);
+
+            // replace BU constant
+            _transformData.ReplaceBUConstant(targetBUInfo);
 
             // root BU must be mapped before import can proceed
             _transformData.SetSourceAndTargetRootBusinessUnitMapping();
