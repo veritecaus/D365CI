@@ -165,12 +165,6 @@ Here is a minimum set of transforms that we recommend for every single Dynamics 
      TargetAttribute: "businessunitid",
      TargetValue: "9CDB1F7D-2F2A-E811-A853-000D3AD07676",
      ReplacementValue : "407C6265-9742-E811-A94F-000D3AD064BD"
-   },
-   {
-     TargetEntity: "organization",
-     TargetAttribute: "organizationid",
-     TargetValue: "*",
-     ReplacementValue : "B5FDDD5B-EDB6-4E80-B1D4-9717BA05BADB"
    }
 ]
 ```
@@ -244,7 +238,7 @@ Import-DynamicsData `
     -TransformFile "transforms.json" `
     -InputDataPath ".\SourceDataPost"
 ```
-# Additional Actions
+# Additional Items
 ##  Set Plugin Status
 The following cmdlet let's you enable or disable a plugin. The PluginStepNames is a semicolon delimited list of plugin names from the "SDK Message Processing Steps" section of the solution manager. Use $true or $false with the setEnabled parameter to enable/disable the plugins.
 ```powershell
@@ -262,4 +256,23 @@ Set-AutoNumberSeed `
     -EntityName 'example_entity' `
     -AttributeName 'example_attribute' `
     -Value '20050000'
+```
+
+## Transform File BU Constants
+The {DESTINATION-ROOT-BU} constant can be used within your transform file so save having to define it. An example of an entry is:
+```json
+[
+  {
+    TargetEntity: "businessunit",
+    TargetAttribute : "parentbusinessunitid",
+    TargetValue : "*",
+    ReplacementValue: "{DESTINATION-ROOT-BU}"
+   },
+   {
+     TargetEntity: "businessunit",
+     TargetAttribute: "businessunitid",
+     TargetValue: "9CDB1F7D-2F2A-E811-A853-000D3AD07676",
+     ReplacementValue : "{DESTINATION-ROOT-BU}"
+   }
+]
 ```
