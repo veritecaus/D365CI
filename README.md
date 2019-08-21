@@ -258,7 +258,7 @@ Set-AutoNumberSeed `
     -Value '20050000'
 ```
 
-## Transform File BU Constants
+## Transform File Constants
 The {DESTINATION-ROOT-BU} constant can be used within your transform file so save having to look up the GUID manually. An example of an entry is:
 ```json
 [
