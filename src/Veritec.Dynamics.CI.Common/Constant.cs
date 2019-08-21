@@ -143,5 +143,10 @@
             public const string Name = "name";
             public const string DomainName = "domainname";
         }
+
+        public static class TransformConstant
+        {
+            public const string DESTINATIONROOTBU = "{DESTINATION-ROOT-BU}";
+        }
     }
 }
