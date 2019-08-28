@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
@@ -66,6 +67,18 @@ namespace Veritec.Dynamics.CI.Common
             query.Criteria.Conditions.AddRange(conditions);
 
             return OrganizationService.RetrieveMultiple(query);
+        }
+
+        public EntityCollection ExecuteFetch(String fetchXMLString)
+        {
+            return ExecuteFetch(new FetchExpression(fetchXMLString));
+        }
+
+        public EntityCollection ExecuteFetch(FetchExpression fetchXmlExpression)
+        {
+            var resultEntityCollection = OrganizationService.RetrieveMultiple(fetchXmlExpression);
+
+            return resultEntityCollection;
         }
     }
 }
