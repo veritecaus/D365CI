@@ -20,7 +20,7 @@ namespace Veritec.Dynamics.CI.PowerShell
         public string TargetRecordsFetchXML { get; set; }
 
         [Parameter(Mandatory = true)]
-        public bool setEnabled { get; set; }
+        public bool SetEnabled { get; set; }
 
         protected override void ProcessRecord()
         {
@@ -36,7 +36,7 @@ namespace Veritec.Dynamics.CI.PowerShell
 
             try
             {
-                if (setEnabled)
+                if (SetEnabled)
                 {
                     recordManager.SetStatus(TargetRecordsFetchXML, RecordManager.RecordStatus.Enable);
                 }
