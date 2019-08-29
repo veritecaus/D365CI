@@ -41,7 +41,7 @@ namespace Veritec.Dynamics.CI.Common
                 }
                 else
                 {
-                    Logger?.Invoke(this, $"Record '{entity.LogicalName} {entity.Id}' already {recordStatus}");
+                    Logger?.Invoke(this, $"Record '{entity.LogicalName} {entity.Id}' already in the {recordStatus} state");
                 }
             }
 
@@ -62,7 +62,7 @@ namespace Veritec.Dynamics.CI.Common
 
         private EntityCollection GetRecords(IOrganizationService orgService, string fetchXML)
         {
-            var entityCollectionResult = orgService.RetrieveMultiple(new FetchExpression());
+            var entityCollectionResult = orgService.RetrieveMultiple(new FetchExpression(fetchXML));
 
             foreach (var entity in entityCollectionResult.Entities)
             {
