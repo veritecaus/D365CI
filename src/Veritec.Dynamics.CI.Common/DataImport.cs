@@ -36,9 +36,9 @@ namespace Veritec.Dynamics.CI.Common
             _transformData = new TransformData(targetDataReplace);
         }
 
-        public DataImport(CrmParameter crmParameter, string targetDataReplaceInputFileName) : base(crmParameter)
+        public DataImport(CrmParameter crmParameter, string targetDataReplaceInputFileNames) : base(crmParameter)
         {
-            _transformData = new TransformData(targetDataReplaceInputFileName);
+            _transformData = new TransformData(targetDataReplaceInputFileNames);
         }
 
         public void ReadFetchXmlQueryResultsFromDiskAndImport(string dataFolder, string[] columnsToExcludeToCompareData, bool verifyDataImport = false)
