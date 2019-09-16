@@ -16,11 +16,24 @@ namespace Veritec.Dynamics.CI.Common
         private Guid _sourceRootBuId = Guid.Empty;
         private readonly TransformConfig _transformConfig;
 
-        public TransformData(string targetDataReplaceInputFileName)
+        public TransformData(string targetDataReplaceInputFileNames)
         {
             _sameGuidsInSourceAndTarget = new List<Guid>();
-            var jsonConfigTransforms = File.ReadAllText(targetDataReplaceInputFileName);
-            _transformConfig = new TransformConfig((List<Transform>)JsonConvert.DeserializeObject<IList<Transform>>(jsonConfigTransforms));
+
+            var targetDataReplaceInputFilesNameSplit = targetDataReplaceInputFileNames.Split(';');
+
+            List<Transform> transforms = new List<Transform>();
+            foreach (var ReplaceInputFileName in targetDataReplaceInputFilesNameSplit)
+            {
+                if (File.Exists(ReplaceInputFileName))
+                {
+                    var jsonConfigTransforms = File.ReadAllText(ReplaceInputFileName);
+                    var jsonConfigTransformsDeserialized = JsonConvert.DeserializeObject<IList<Transform>>(jsonConfigTransforms);
+                    transforms.AddRange(jsonConfigTransformsDeserialized);
+                }
+            }
+
+            _transformConfig = new TransformConfig(transforms);
         }
 
         public void TransformValue(Entity sourceEntity, string sourceAttribute, object sourceValue)

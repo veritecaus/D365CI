@@ -13,7 +13,7 @@ namespace Veritec.Dynamics.CI.PowerShell
         public string ConnectionString { get; set; }
 
         [Parameter(Mandatory = true)]
-        public string TransformFile { get; set; }
+        public string TransformFiles { get; set; }
 
         [Parameter(Mandatory = false)]
         public string InputDataPath { get; set; }
@@ -23,7 +23,7 @@ namespace Veritec.Dynamics.CI.PowerShell
 
         protected override void ProcessRecord()
         {
-            WriteObject("Transform File: " + TransformFile);
+            WriteObject("Transform File(s): " + TransformFiles);
             WriteObject("Input Data Path: " + InputDataPath);
 
             var crmParameter = new CrmParameter(ConnectionString)
@@ -31,7 +31,7 @@ namespace Veritec.Dynamics.CI.PowerShell
                 ExportDirectoryName = InputDataPath
             };
 
-            ExecuteImportData(crmParameter, crmParameter.GetSourceDataDirectory(), TransformFile);
+            ExecuteImportData(crmParameter, crmParameter.GetSourceDataDirectory(), TransformFiles);
 
             if (PublishAllCustomizations)
             {
@@ -41,15 +41,10 @@ namespace Veritec.Dynamics.CI.PowerShell
             }
         }
 
-        protected virtual void ExecuteImportData(CrmParameter crmParameter, string dataDir, string transformFileName)
+        protected virtual void ExecuteImportData(CrmParameter crmParameter, string dataDir, string transformFileNames)
         {
-            transformFileName = (string.IsNullOrWhiteSpace(transformFileName) || transformFileName == "NULL" ?
-                @"Veritec.Dynamics.DataMigrate.Transform.xml" : transformFileName);
-
-            WriteObject("Transfrom File: " + transformFileName);
-
             WriteObject($"Connecting ({crmParameter.GetConnectionStringObfuscated()})");
-            var dataImport = new DataImport(crmParameter, transformFileName);
+            var dataImport = new DataImport(crmParameter, transformFileNames);
 
             dataImport.Logger += Feedback_Received;
 
