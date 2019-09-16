@@ -50,14 +50,15 @@ namespace Veritec.Dynamics.CI.Common
                 case object s when (s.GetType().IsPrimitive || s.GetType() == typeof(string)):
                     // the IsPrimitive types are Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
 
-                    var substituteValue = TransformObjectValue(sourceEntity.LogicalName, sourceAttribute, sourceValue);
+                    var transform = TransformObject(sourceEntity.LogicalName, sourceAttribute, sourceValue);
 
-                    if (!substituteValue.ToString().Equals(sourceValue.ToString(), StringComparison.OrdinalIgnoreCase))
+                    if (transform != null && !transform.ReplacementValue.ToString().Equals(sourceValue.ToString(), StringComparison.OrdinalIgnoreCase))
                     {
-                        sourceEntity[sourceAttribute] = substituteValue;
-                        Console.WriteLine($"Column: {sourceAttribute}, Substitute Value: {substituteValue}");
+                        sourceEntity[transform.ReplacementAttribute] = Convert.ChangeType(transform.ReplacementValue, sourceValue.GetType());
+                        // Console.WriteLine($"Column: {transform.TargetAttribute}, Substitute Value: {transform.ReplacementValue}");
                     }
                     break;
+
             }
         }
 
@@ -116,8 +117,7 @@ namespace Veritec.Dynamics.CI.Common
         /// <returns></returns>
         public T TransformObjectValue<T>(string entityName, string attributeName, T sourceValue)
         {
-            var transformMatch = _transformConfig[entityName, attributeName, sourceValue.ToString().ToLower()] ??
-                         _transformConfig[entityName, attributeName, "*"];
+            var transformMatch = TransformObject(entityName, attributeName, sourceValue);
 
             if (transformMatch == null || string.IsNullOrEmpty(transformMatch.ReplacementValue))
                 return sourceValue;
@@ -126,6 +126,17 @@ namespace Veritec.Dynamics.CI.Common
                 return (T)Convert.ChangeType(Guid.Parse(transformMatch.ReplacementValue), sourceValue.GetType());
 
             return (T)Convert.ChangeType(transformMatch.ReplacementValue, sourceValue.GetType());
+        }
+
+        public Transform TransformObject<T>(string entityName, string attributeName, T sourceValue)
+        {
+            var transformMatch = _transformConfig[entityName, attributeName, sourceValue.ToString().ToLower()] ??
+                         _transformConfig[entityName, attributeName, "*"];
+
+            if (transformMatch == null || string.IsNullOrEmpty(transformMatch.ReplacementValue))
+                return null;
+
+            return transformMatch;
         }
 
         private void TransformTargetGuidValue(Entity sourceEntity, string attributeName, object oldValue)
