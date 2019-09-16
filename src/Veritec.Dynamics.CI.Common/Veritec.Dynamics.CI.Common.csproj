@@ -109,6 +109,7 @@
     <Compile Include="CrmParameter.cs" />
     <Compile Include="CredentialTool.cs" />
     <Compile Include="PluginManager.cs" />
+    <Compile Include="RecordManager.cs" />
     <Compile Include="TransformConfig.cs" />
     <Compile Include="WFandSLAMigrateUtility.cs" />
     <Compile Include="DataImport.cs" />

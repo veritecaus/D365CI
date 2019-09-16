@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Newtonsoft.Json;
@@ -240,6 +241,22 @@ namespace Veritec.Dynamics.CI.Common
                 }
             }
 
+        }
+
+        public void ReplaceFetchXMLEntries(DataLoader dataLoader)
+        {
+            foreach (var transform in _transformConfig.Transforms)
+            {
+                if (transform.ReplacementValue.StartsWith("<fetch"))
+                {
+                    var resultCollection = dataLoader.ExecuteFetch(transform.ReplacementValue);
+
+                    if (resultCollection.Entities.Count != 1 || resultCollection[0].Attributes.Count != 1)
+                        throw new Exception($"Only one record with one field can be accepted as a return value from a transform fetchxml. Record Count: {resultCollection.TotalRecordCount}, Attibute Count: {resultCollection[0].Attributes.Count}, Offending FetchXML: {transform.ReplacementValue} ");
+
+                    transform.ReplacementValue = resultCollection.Entities.First().Attributes.First().Value.ToString();
+                }
+            }
         }
 
         /// <summary>

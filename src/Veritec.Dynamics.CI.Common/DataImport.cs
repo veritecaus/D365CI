@@ -125,6 +125,9 @@ namespace Veritec.Dynamics.CI.Common
             // Important note: if the SysAdmin is already set for Team.AdministratorId using the transform config then 
             // this method will NOT override the value set by the Transforms 
             _transformData.SetSystemAdministrator(targetSystemUsers, CrmParameter.UserName);
+
+            Logger?.Invoke(this, "\r\nPreparing FetchXML replacements for Target Organization...");
+            _transformData.ReplaceFetchXMLEntries(targetDataLoader);
         }
 
         /// <summary>
