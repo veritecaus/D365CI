@@ -382,11 +382,11 @@ namespace Veritec.Dynamics.CI.Common
 
                         if (TargetSameAsSource(curEntity, targetEntity))
                         {
-                            debugInfo = "Skipping Update";
+                            debugInfo = "Skip Update";
                         }
                         else
                         {
-                            debugInfo = "Updating";
+                            debugInfo = "Update";
                             OrganizationService.Update(curEntity);
                         }
                     }
@@ -397,19 +397,19 @@ namespace Veritec.Dynamics.CI.Common
                         {
                             /* user trying to insert inactive record */
                             /* need to create first then update to inactive */
-                            debugInfo = "Inserting Inactive";
+                            debugInfo = "Insert Inactive";
                             OrganizationService.Create(new Entity(curEntity.LogicalName, curEntity.Id));
                             OrganizationService.Update(curEntity);
                         }
                         else
                         {
-                            debugInfo = "Inserting";
+                            debugInfo = "Insert";
                             OrganizationService.Create(curEntity);
                         }
                         
                     }
                 }
-                Logger?.Invoke(this, (targetEntity == null ? "Inserted" : "Updated") + ": " + CommonUtility.GetUserFriendlyMessage(curEntity));
+                Logger?.Invoke(this, $"{debugInfo}: {CommonUtility.GetUserFriendlyMessage(curEntity)}");
             }
             catch (Exception exception)
             {
@@ -445,7 +445,7 @@ namespace Veritec.Dynamics.CI.Common
             if (entityMetaData == null)
                 return new ColumnSet(false);
 
-            if (entityMetaData.IsCustomEntity.Value || entityMetaData.LogicalName.Equals(Constant.DuplicateRule.EntityLogicalName, StringComparison.OrdinalIgnoreCase) ||
+            if (entityMetaData.LogicalName.Equals(Constant.DuplicateRule.EntityLogicalName, StringComparison.OrdinalIgnoreCase) ||
                 entityMetaData.LogicalName.Equals(Constant.Sla.EntityLogicalName, StringComparison.OrdinalIgnoreCase) ||
                 entityMetaData.LogicalName.Equals(Constant.Workflow.EntityLogicalName, StringComparison.OrdinalIgnoreCase))
 
