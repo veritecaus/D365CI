@@ -286,6 +286,19 @@ The {DESTINATION-ROOT-BU} constant can be used within your transform file so sav
 ]
 ```
 
+## Replacement Attribute
+This feature gives you the ability to target a certain attribute and value to be replaced, but then replace a different attribute with a value. For example, in the below scenario you can see this being used for a custom config entity where a row with an attribute sol_name="DebugToolBar" should have the sol_valuestring attribute replaced with TRUE
+```json
+[
+  {
+    "TargetEntity": "sol_configurationsetting",
+    "TargetAttribute": "sol_name",
+    "TargetValue": "DebugToolbar",
+    "ReplacementAttribute": "sol_valuestring",
+    "ReplacementValue": "TRUE"
+  }
+]
+```
 ## Transform File Fetch XML
 Fetch XML can be used in the ReplacementValue to save you from having to look up the GUID manually. The fetch must only return one row and one column. An example of an entry is:
 ```json
