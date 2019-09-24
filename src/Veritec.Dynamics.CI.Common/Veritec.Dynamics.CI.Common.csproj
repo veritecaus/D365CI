@@ -111,7 +111,6 @@
     <Compile Include="PluginManager.cs" />
     <Compile Include="RecordManager.cs" />
     <Compile Include="TransformConfig.cs" />
-    <Compile Include="TransformResult.cs" />
     <Compile Include="WFandSLAMigrateUtility.cs" />
     <Compile Include="DataImport.cs" />
     <Compile Include="DataExport.cs" />
