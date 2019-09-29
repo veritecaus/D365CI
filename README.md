@@ -248,6 +248,15 @@ Set-PluginStatus `
     -setEnabled $true 
 ```
 
+##  Set Record Status
+The following cmdlet let's you enable or disable a record or set of records. The TargetRecordsFetchXML parameter should contain a fetch xml query for the records you woud like to target and use $true or $false with the setEnabled parameter to enable/disable the target records.
+```powershell
+Set-RecordStatus `
+    -ConnectionString $connectString `
+    -TargetRecordsFetchXML "<fetch><entity name='msdyn_postconfig' ><attribute name='msdyn_entityname' /><attribute name='msdyn_configurewall' /><attribute name='statecode' /><attribute name='statuscode' /><filter><condition attribute='msdyn_entityname' operator='eq' value='new_customentity' /></filter></entity></fetch>" `
+    -setEnabled $true 
+```
+
 ## Set Auto Number
 Simple cmdlet to set the autonumber seed value. To keep this as a safe operation, the cmdlet will first ensure that there is no data present for the given entity. You can override this behaviour with the 'Force=$true' parameter
 ```powershell
@@ -274,5 +283,30 @@ The {DESTINATION-ROOT-BU} constant can be used within your transform file so sav
      TargetValue: "9CDB1F7D-2F2A-E811-A853-000D3AD07676",
      ReplacementValue : "{DESTINATION-ROOT-BU}"
    }
+]
+```
+
+## Transform File Fetch XML
+Fetch XML can be used in the ReplacementValue to save you from having to look up the GUID manually. The fetch must only return one row and one column. An example of an entry is:
+```json
+[
+  {
+    TargetEntity: "businessunit",
+    TargetAttribute : "parentbusinessunitid",
+    TargetValue : "*",
+    ReplacementValue: "{DESTINATION-ROOT-BU}"
+   },
+   {
+     TargetEntity: "businessunit",
+     TargetAttribute: "businessunitid",
+     TargetValue: "9CDB1F7D-2F2A-E811-A853-000D3AD07676",
+     ReplacementValue : "{DESTINATION-ROOT-BU}"
+   },
+   {
+     "TargetEntity": "duplicaterulecondition",
+     "TargetAttribute": "duplicateruleconditionid",
+     "TargetValue": "d10c3872-372a-e811-a853-000d3ad07676",
+     "ReplacementValue": "<fetch><entity name='duplicaterulecondition'><attribute name='duplicateruleconditionid'/><filter><condition attribute='matchingattributename' operator='eq' value='community'/></filter><link-entity name='duplicaterule' from='duplicateruleid' to='regardingobjectid' link-type='outer'><filter><condition attribute='name' operator='eq' value='Social profiles with same full name and social channel'/></filter></link-entity></entity></fetch>"
+   }  
 ]
 ```
