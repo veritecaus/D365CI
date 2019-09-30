@@ -137,12 +137,7 @@ Once you're able to export your data above. Add this extra statement to import t
 # Import Dynamics Data
 Import-DynamicsData `
     -ConnectionString $connectString `
-    -EncryptedPassword $encryptedPwd `
-    -TransformFile "transforms.json"
-
-Import-DynamicsData `
-    -ConnectionString $connectString `
-    -TransformFile "transforms.json" `
+    -TransformFiles @(".\transforms.json") `
     -InputDataPath ".\ReferenceData"
 ```
 The Transform file is used to modify your data to be inserted into your target environment. This is useful when:
@@ -223,7 +218,7 @@ $connectString =  "AuthType=Office365;Url=https://yourorg.crm6.dynamics.com;Requ
 # Import Dynamics Data Pre
 Import-DynamicsData `
     -ConnectionString $connectString `
-    -TransformFile "transforms.json" `
+    -TransformFiles @(".\transforms.json") `
     -InputDataPath ".\SourceDataPre"
  
 # Import Dynamics Solutions to target
@@ -235,8 +230,8 @@ Import-DynamicsSolution `
 # Import Dynamics Data Post
 Import-DynamicsData `
     -ConnectionString $connectString `
-    -TransformFile "transforms.json" `
-    -InputDataPath ".\SourceDataPost"
+    -TransformFiles @(".\transforms.json") `
+    -InputDataPath ".\ReferenceData"
 ```
 # Additional Items
 ##  Set Plugin Status
