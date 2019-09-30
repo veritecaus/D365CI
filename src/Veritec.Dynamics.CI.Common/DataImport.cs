@@ -31,12 +31,12 @@ namespace Veritec.Dynamics.CI.Common
         public Dictionary<string, EntityCollection> SourceData;
         public Dictionary<string, EntityMetadata> TargetEntitiesMetaData;
 
-        public DataImport(string dynamicsConnectionString, string targetDataReplace) : base(dynamicsConnectionString)
+        /*public DataImport(string dynamicsConnectionString, string targetDataReplace) : base(dynamicsConnectionString)
         {
             _transformData = new TransformData(targetDataReplace);
-        }
+        }*/
 
-        public DataImport(CrmParameter crmParameter, string targetDataReplaceInputFileNames) : base(crmParameter)
+        public DataImport(CrmParameter crmParameter, string[] targetDataReplaceInputFileNames) : base(crmParameter)
         {
             _transformData = new TransformData(targetDataReplaceInputFileNames);
         }

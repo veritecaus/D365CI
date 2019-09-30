@@ -16,14 +16,14 @@ namespace Veritec.Dynamics.CI.Common
         private Guid _sourceRootBuId = Guid.Empty;
         private readonly TransformConfig _transformConfig;
 
-        public TransformData(string targetDataReplaceInputFileNames)
+        public TransformData(string[] targetDataReplaceInputFileNames)
         {
             _sameGuidsInSourceAndTarget = new List<Guid>();
 
-            var targetDataReplaceInputFilesNameSplit = targetDataReplaceInputFileNames.Split(';');
+            //var targetDataReplaceInputFilesNameSplit = targetDataReplaceInputFileNames.Split(';');
 
             List<Transform> transforms = new List<Transform>();
-            foreach (var ReplaceInputFileName in targetDataReplaceInputFilesNameSplit)
+            foreach (var ReplaceInputFileName in targetDataReplaceInputFileNames)
             {
                 if (File.Exists(ReplaceInputFileName))
                 {
@@ -68,7 +68,6 @@ namespace Veritec.Dynamics.CI.Common
                     if (transform != null && !transform.ReplacementValue.ToString().Equals(sourceValue.ToString(), StringComparison.OrdinalIgnoreCase))
                     {
                         sourceEntity[transform.ReplacementAttribute] = Convert.ChangeType(transform.ReplacementValue, sourceValue.GetType());
-                        // Console.WriteLine($"Column: {transform.TargetAttribute}, Substitute Value: {transform.ReplacementValue}");
                     }
                     break;
 

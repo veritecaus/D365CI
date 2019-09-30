@@ -13,7 +13,7 @@ namespace Veritec.Dynamics.CI.PowerShell
         public string ConnectionString { get; set; }
 
         [Parameter(Mandatory = true)]
-        public string TransformFiles { get; set; }
+        public string[] TransformFiles { get; set; }
 
         [Parameter(Mandatory = false)]
         public string InputDataPath { get; set; }
@@ -23,7 +23,7 @@ namespace Veritec.Dynamics.CI.PowerShell
 
         protected override void ProcessRecord()
         {
-            WriteObject("Transform File(s): " + TransformFiles);
+            WriteObject("Transform File(s): " + string.Join("; ", TransformFiles));
             WriteObject("Input Data Path: " + InputDataPath);
 
             var crmParameter = new CrmParameter(ConnectionString)
@@ -41,7 +41,7 @@ namespace Veritec.Dynamics.CI.PowerShell
             }
         }
 
-        protected virtual void ExecuteImportData(CrmParameter crmParameter, string dataDir, string transformFileNames)
+        protected virtual void ExecuteImportData(CrmParameter crmParameter, string dataDir, string[] transformFileNames)
         {
             WriteObject($"Connecting ({crmParameter.GetConnectionStringObfuscated()})");
             var dataImport = new DataImport(crmParameter, transformFileNames);
