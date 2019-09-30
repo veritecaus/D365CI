@@ -4,10 +4,11 @@ namespace Veritec.Dynamics.CI.Common
 {
     public class TransformConfig
     {
-        public TransformConfig(List<Transform> transforms)
+        public TransformConfig()
         {
-            Transforms = transforms;
+            Transforms = new List<Transform>();
         }
+
         public Transform this[string entity, string attribute, string value]
         {
             get

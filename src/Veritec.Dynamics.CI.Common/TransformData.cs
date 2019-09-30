@@ -10,13 +10,18 @@ namespace Veritec.Dynamics.CI.Common
 {
     internal class TransformData
     {
-        private readonly List<Guid> _sameGuidsInSourceAndTarget;
+        private List<Guid> _sameGuidsInSourceAndTarget;
         private EntityReference _targetSystemAdministrator;
         private Guid _targetRootBuId = Guid.Empty;
         private Guid _sourceRootBuId = Guid.Empty;
-        private readonly TransformConfig _transformConfig;
+        private TransformConfig _transformConfig;
 
-        public TransformData(string[] targetDataReplaceInputFileNames)
+        public TransformData()
+        {
+            _transformConfig = new TransformConfig();
+        }
+
+        public void AddTransformsFromFile(string[] targetDataReplaceInputFileNames)
         {
             _sameGuidsInSourceAndTarget = new List<Guid>();
 
@@ -27,11 +32,9 @@ namespace Veritec.Dynamics.CI.Common
                 {
                     var jsonConfigTransforms = File.ReadAllText(ReplaceInputFileName);
                     var jsonConfigTransformsDeserialized = JsonConvert.DeserializeObject<IList<Transform>>(jsonConfigTransforms);
-                    transforms.AddRange(jsonConfigTransformsDeserialized);
+                    _transformConfig.Transforms.AddRange(jsonConfigTransformsDeserialized);
                 }
             }
-
-            _transformConfig = new TransformConfig(transforms);
         }
 
         public void TransformValue(Entity sourceEntity, string sourceAttribute, object sourceValue)
@@ -74,6 +77,11 @@ namespace Veritec.Dynamics.CI.Common
 
         private void TransformTargetEntityReferenceValue(Entity sourceEntity, string attributeName, object oldValue)
         {
+            if (_transformConfig is null)
+            {
+                throw new Exception("No transform configs loaded");
+            }
+
             var oldEntityReference = (EntityReference)oldValue;
 
             // if the guid of the record is same in source and target then there is no mapping as no need to replace 
@@ -140,6 +148,11 @@ namespace Veritec.Dynamics.CI.Common
 
         public Transform TransformObject<T>(string entityName, string attributeName, T sourceValue)
         {
+            if (_transformConfig is null)
+            {
+                throw new Exception("No transform configs loaded");
+            }
+
             var transformMatch = _transformConfig[entityName, attributeName, sourceValue.ToString().ToLower()] ??
                          _transformConfig[entityName, attributeName, "*"];
 
@@ -251,6 +264,11 @@ namespace Veritec.Dynamics.CI.Common
 
         public void ReplaceBUConstant(EntityCollection targetBUInfo)
         {
+            if (_transformConfig is null)
+            {
+                throw new Exception("No transform configs loaded");
+            }
+
             if (targetBUInfo == null && targetBUInfo.Entities.Count != 1)
                 throw new Exception("Unable to detect root Business Unit");
 
@@ -266,6 +284,11 @@ namespace Veritec.Dynamics.CI.Common
 
         public void ReplaceFetchXMLEntries(DataLoader dataLoader)
         {
+            if (_transformConfig is null)
+            {
+                throw new Exception("No transform configs loaded");
+            }
+
             foreach (var transform in _transformConfig.Transforms)
             {
                 if (transform.ReplacementValue.StartsWith("<fetch"))
@@ -285,6 +308,11 @@ namespace Veritec.Dynamics.CI.Common
         /// </summary>
         public void SetSourceAndTargetRootBusinessUnitMapping()
         {
+            if (_transformConfig is null)
+            {
+                throw new Exception("No transform configs loaded");
+            }
+
             // get Parent Business Id
             var targetRootBu = TransformObjectValue(Constant.BusinessUnit.EntityLogicalName, Constant.BusinessUnit.ParentBusinessUnitId, "*");
             if (string.IsNullOrWhiteSpace(targetRootBu) || !Guid.TryParse(targetRootBu, out _targetRootBuId))
