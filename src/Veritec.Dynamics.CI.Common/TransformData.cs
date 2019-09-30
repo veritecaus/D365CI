@@ -20,8 +20,6 @@ namespace Veritec.Dynamics.CI.Common
         {
             _sameGuidsInSourceAndTarget = new List<Guid>();
 
-            //var targetDataReplaceInputFilesNameSplit = targetDataReplaceInputFileNames.Split(';');
-
             List<Transform> transforms = new List<Transform>();
             foreach (var ReplaceInputFileName in targetDataReplaceInputFileNames)
             {
