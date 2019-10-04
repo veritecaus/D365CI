@@ -295,8 +295,11 @@ namespace Veritec.Dynamics.CI.Common
                 {
                     var resultCollection = dataLoader.ExecuteFetch(transform.ReplacementValue);
 
-                    if (resultCollection.Entities.Count != 1 || resultCollection[0].Attributes.Count != 1)
-                        throw new Exception($"Only one record with one field can be accepted as a return value from a transform fetchxml. Record Count: {resultCollection.TotalRecordCount}, Attibute Count: {resultCollection[0].Attributes.Count}, Offending FetchXML: {transform.ReplacementValue} ");
+                    if (resultCollection.Entities.Count != 1)
+                        throw new Exception($"Only one record can be accepted as a return value from a transform fetchxml. Record Count: {resultCollection.Entities.Count}, Offending FetchXML: {transform.ReplacementValue} ");
+
+                    if (resultCollection[0].Attributes.Count != 1)
+                        throw new Exception($"Only one field can be accepted as a return value from a transform fetchxml. Attibute Count: {resultCollection[0].Attributes.Count}, Offending FetchXML: {transform.ReplacementValue} ");
 
                     transform.ReplacementValue = resultCollection.Entities.First().Attributes.First().Value.ToString();
                 }
