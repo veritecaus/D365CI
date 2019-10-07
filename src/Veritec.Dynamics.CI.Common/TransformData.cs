@@ -10,17 +10,31 @@ namespace Veritec.Dynamics.CI.Common
 {
     internal class TransformData
     {
-        private readonly List<Guid> _sameGuidsInSourceAndTarget;
+        private List<Guid> _sameGuidsInSourceAndTarget;
         private EntityReference _targetSystemAdministrator;
         private Guid _targetRootBuId = Guid.Empty;
         private Guid _sourceRootBuId = Guid.Empty;
-        private readonly TransformConfig _transformConfig;
+        private TransformConfig _transformConfig;
 
-        public TransformData(string targetDataReplaceInputFileName)
+        public TransformData()
+        {
+            _transformConfig = new TransformConfig();
+        }
+
+        public void AddTransformsFromFile(string[] targetDataReplaceInputFileNames)
         {
             _sameGuidsInSourceAndTarget = new List<Guid>();
-            var jsonConfigTransforms = File.ReadAllText(targetDataReplaceInputFileName);
-            _transformConfig = new TransformConfig((List<Transform>)JsonConvert.DeserializeObject<IList<Transform>>(jsonConfigTransforms));
+
+            List<Transform> transforms = new List<Transform>();
+            foreach (var ReplaceInputFileName in targetDataReplaceInputFileNames)
+            {
+                if (File.Exists(ReplaceInputFileName))
+                {
+                    var jsonConfigTransforms = File.ReadAllText(ReplaceInputFileName);
+                    var jsonConfigTransformsDeserialized = JsonConvert.DeserializeObject<IList<Transform>>(jsonConfigTransforms);
+                    _transformConfig.Transforms.AddRange(jsonConfigTransformsDeserialized);
+                }
+            }
         }
 
         public void TransformValue(Entity sourceEntity, string sourceAttribute, object sourceValue)
@@ -50,19 +64,24 @@ namespace Veritec.Dynamics.CI.Common
                 case object s when (s.GetType().IsPrimitive || s.GetType() == typeof(string)):
                     // the IsPrimitive types are Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
 
-                    var substituteValue = TransformObjectValue(sourceEntity.LogicalName, sourceAttribute, sourceValue);
+                    var transform = TransformObject(sourceEntity.LogicalName, sourceAttribute, sourceValue);
 
-                    if (!substituteValue.ToString().Equals(sourceValue.ToString(), StringComparison.OrdinalIgnoreCase))
+                    if (transform != null && !transform.ReplacementValue.ToString().Equals(sourceValue.ToString(), StringComparison.OrdinalIgnoreCase))
                     {
-                        sourceEntity[sourceAttribute] = substituteValue;
-                        Console.WriteLine($"Column: {sourceAttribute}, Substitute Value: {substituteValue}");
+                        sourceEntity[transform.ReplacementAttribute] = Convert.ChangeType(transform.ReplacementValue, sourceValue.GetType());
                     }
                     break;
+
             }
         }
 
         private void TransformTargetEntityReferenceValue(Entity sourceEntity, string attributeName, object oldValue)
         {
+            if (_transformConfig is null)
+            {
+                throw new Exception("No transform configs loaded");
+            }
+
             var oldEntityReference = (EntityReference)oldValue;
 
             // if the guid of the record is same in source and target then there is no mapping as no need to replace 
@@ -116,8 +135,7 @@ namespace Veritec.Dynamics.CI.Common
         /// <returns></returns>
         public T TransformObjectValue<T>(string entityName, string attributeName, T sourceValue)
         {
-            var transformMatch = _transformConfig[entityName, attributeName, sourceValue.ToString().ToLower()] ??
-                         _transformConfig[entityName, attributeName, "*"];
+            var transformMatch = TransformObject(entityName, attributeName, sourceValue);
 
             if (transformMatch == null || string.IsNullOrEmpty(transformMatch.ReplacementValue))
                 return sourceValue;
@@ -126,6 +144,22 @@ namespace Veritec.Dynamics.CI.Common
                 return (T)Convert.ChangeType(Guid.Parse(transformMatch.ReplacementValue), sourceValue.GetType());
 
             return (T)Convert.ChangeType(transformMatch.ReplacementValue, sourceValue.GetType());
+        }
+
+        public Transform TransformObject<T>(string entityName, string attributeName, T sourceValue)
+        {
+            if (_transformConfig is null)
+            {
+                throw new Exception("No transform configs loaded");
+            }
+
+            var transformMatch = _transformConfig[entityName, attributeName, sourceValue.ToString().ToLower()] ??
+                         _transformConfig[entityName, attributeName, "*"];
+
+            if (transformMatch == null || string.IsNullOrEmpty(transformMatch.ReplacementValue))
+                return null;
+
+            return transformMatch;
         }
 
         private void TransformTargetGuidValue(Entity sourceEntity, string attributeName, object oldValue)
@@ -230,6 +264,11 @@ namespace Veritec.Dynamics.CI.Common
 
         public void ReplaceBUConstant(EntityCollection targetBUInfo)
         {
+            if (_transformConfig is null)
+            {
+                throw new Exception("No transform configs loaded");
+            }
+
             if (targetBUInfo == null && targetBUInfo.Entities.Count != 1)
                 throw new Exception("Unable to detect root Business Unit");
 
@@ -245,14 +284,22 @@ namespace Veritec.Dynamics.CI.Common
 
         public void ReplaceFetchXMLEntries(DataLoader dataLoader)
         {
+            if (_transformConfig is null)
+            {
+                throw new Exception("No transform configs loaded");
+            }
+
             foreach (var transform in _transformConfig.Transforms)
             {
                 if (transform.ReplacementValue.StartsWith("<fetch"))
                 {
                     var resultCollection = dataLoader.ExecuteFetch(transform.ReplacementValue);
 
-                    if (resultCollection.Entities.Count != 1 || resultCollection[0].Attributes.Count != 1)
-                        throw new Exception($"Only one record with one field can be accepted as a return value from a transform fetchxml. Record Count: {resultCollection.TotalRecordCount}, Attibute Count: {resultCollection[0].Attributes.Count}, Offending FetchXML: {transform.ReplacementValue} ");
+                    if (resultCollection.Entities.Count != 1)
+                        throw new Exception($"Only one record can be accepted as a return value from a transform fetchxml. Record Count: {resultCollection.Entities.Count}, Offending FetchXML: {transform.ReplacementValue} ");
+
+                    if (resultCollection[0].Attributes.Count != 1)
+                        throw new Exception($"Only one field can be accepted as a return value from a transform fetchxml. Attibute Count: {resultCollection[0].Attributes.Count}, Offending FetchXML: {transform.ReplacementValue} ");
 
                     transform.ReplacementValue = resultCollection.Entities.First().Attributes.First().Value.ToString();
                 }
@@ -264,6 +311,11 @@ namespace Veritec.Dynamics.CI.Common
         /// </summary>
         public void SetSourceAndTargetRootBusinessUnitMapping()
         {
+            if (_transformConfig is null)
+            {
+                throw new Exception("No transform configs loaded");
+            }
+
             // get Parent Business Id
             var targetRootBu = TransformObjectValue(Constant.BusinessUnit.EntityLogicalName, Constant.BusinessUnit.ParentBusinessUnitId, "*");
             if (string.IsNullOrWhiteSpace(targetRootBu) || !Guid.TryParse(targetRootBu, out _targetRootBuId))

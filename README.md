@@ -137,12 +137,7 @@ Once you're able to export your data above. Add this extra statement to import t
 # Import Dynamics Data
 Import-DynamicsData `
     -ConnectionString $connectString `
-    -EncryptedPassword $encryptedPwd `
-    -TransformFile "transforms.json"
-
-Import-DynamicsData `
-    -ConnectionString $connectString `
-    -TransformFile "transforms.json" `
+    -TransformFiles @(".\transforms.json") `
     -InputDataPath ".\ReferenceData"
 ```
 The Transform file is used to modify your data to be inserted into your target environment. This is useful when:
@@ -223,7 +218,7 @@ $connectString =  "AuthType=Office365;Url=https://yourorg.crm6.dynamics.com;Requ
 # Import Dynamics Data Pre
 Import-DynamicsData `
     -ConnectionString $connectString `
-    -TransformFile "transforms.json" `
+    -TransformFiles @(".\transforms.json") `
     -InputDataPath ".\SourceDataPre"
  
 # Import Dynamics Solutions to target
@@ -235,8 +230,8 @@ Import-DynamicsSolution `
 # Import Dynamics Data Post
 Import-DynamicsData `
     -ConnectionString $connectString `
-    -TransformFile "transforms.json" `
-    -InputDataPath ".\SourceDataPost"
+    -TransformFiles @(".\transforms.json") `
+    -InputDataPath ".\ReferenceData"
 ```
 # Additional Items
 ##  Set Plugin Status
@@ -285,7 +280,6 @@ The {DESTINATION-ROOT-BU} constant can be used within your transform file so sav
    }
 ]
 ```
-
 ## Transform File Fetch XML
 Fetch XML can be used in the ReplacementValue to save you from having to look up the GUID manually. The fetch must only return one row and one column. An example of an entry is:
 ```json
@@ -308,5 +302,19 @@ Fetch XML can be used in the ReplacementValue to save you from having to look up
      "TargetValue": "d10c3872-372a-e811-a853-000d3ad07676",
      "ReplacementValue": "<fetch><entity name='duplicaterulecondition'><attribute name='duplicateruleconditionid'/><filter><condition attribute='matchingattributename' operator='eq' value='community'/></filter><link-entity name='duplicaterule' from='duplicateruleid' to='regardingobjectid' link-type='outer'><filter><condition attribute='name' operator='eq' value='Social profiles with same full name and social channel'/></filter></link-entity></entity></fetch>"
    }  
+]
+```
+
+## Replacement Attribute
+This feature gives you the ability to target a certain attribute and value to be replaced, but then replace a different attribute with a value. For example, in the below scenario you can see this being used for a custom config entity where a row with an attribute sol_name="DebugToolBar" should have the sol_valuestring attribute replaced with TRUE
+```json
+[
+  {
+    "TargetEntity": "sol_configurationsetting",
+    "TargetAttribute": "sol_name",
+    "TargetValue": "DebugToolbar",
+    "ReplacementAttribute": "sol_valuestring",
+    "ReplacementValue": "TRUE"
+  }
 ]
 ```

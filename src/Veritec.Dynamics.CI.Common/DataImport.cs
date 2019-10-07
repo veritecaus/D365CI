@@ -31,14 +31,10 @@ namespace Veritec.Dynamics.CI.Common
         public Dictionary<string, EntityCollection> SourceData;
         public Dictionary<string, EntityMetadata> TargetEntitiesMetaData;
 
-        public DataImport(string dynamicsConnectionString, string targetDataReplace) : base(dynamicsConnectionString)
+        public DataImport(CrmParameter crmParameter, string[] targetDataReplaceInputFileNames) : base(crmParameter)
         {
-            _transformData = new TransformData(targetDataReplace);
-        }
-
-        public DataImport(CrmParameter crmParameter, string targetDataReplaceInputFileName) : base(crmParameter)
-        {
-            _transformData = new TransformData(targetDataReplaceInputFileName);
+            _transformData = new TransformData();
+            _transformData.AddTransformsFromFile(targetDataReplaceInputFileNames);
         }
 
         public void ReadFetchXmlQueryResultsFromDiskAndImport(string dataFolder, string[] columnsToExcludeToCompareData, bool verifyDataImport = false)
@@ -185,7 +181,7 @@ namespace Veritec.Dynamics.CI.Common
                             {
                                 // replace any Target Data (ie value to be replaced) with the value from the transform file
                                 //if (curEntity.LogicalName == "contact")
-                                    _transformData.TransformValue(curEntity, a.Key, a.Value);
+                                _transformData.TransformValue(curEntity, a.Key, a.Value);
                             }
                         }
 
@@ -313,7 +309,7 @@ namespace Veritec.Dynamics.CI.Common
                         new[] { Constant.FieldSecurityProfile.Name });
                     _transformData.PopulateFieldSecurityProfileTransforms(fetchXmlQueryData, targetFieldSecurityProfiles);
                     return false; //security role is imported using D365 solution
- 
+
                 case Constant.TransactionCurrency.EntityLogicalName:
                     Logger?.Invoke(this, "\r\nPreparing data replacement for Currencies...");
                     var targetCurrencies = targetDataLoader.GetAllEntity(Constant.TransactionCurrency.EntityLogicalName,
@@ -382,34 +378,34 @@ namespace Veritec.Dynamics.CI.Common
 
                         if (TargetSameAsSource(curEntity, targetEntity))
                         {
-                            debugInfo = "Skipping Update";
+                            debugInfo = "Skip Update";
                         }
                         else
                         {
-                            debugInfo = "Updating";
+                            debugInfo = "Update";
                             OrganizationService.Update(curEntity);
                         }
                     }
                     else
                     {
-                        
-                        if (curEntity.Attributes.ContainsKey("statecode") && ((OptionSetValue)curEntity.Attributes["statecode"]).Value  == 1) //inactive
+
+                        if (curEntity.Attributes.ContainsKey("statecode") && ((OptionSetValue)curEntity.Attributes["statecode"]).Value == 1) //inactive
                         {
                             /* user trying to insert inactive record */
                             /* need to create first then update to inactive */
-                            debugInfo = "Inserting Inactive";
+                            debugInfo = "Insert Inactive";
                             OrganizationService.Create(new Entity(curEntity.LogicalName, curEntity.Id));
                             OrganizationService.Update(curEntity);
                         }
                         else
                         {
-                            debugInfo = "Inserting";
+                            debugInfo = "Insert";
                             OrganizationService.Create(curEntity);
                         }
-                        
+
                     }
                 }
-                Logger?.Invoke(this, (targetEntity == null ? "Inserted" : "Updated") + ": " + CommonUtility.GetUserFriendlyMessage(curEntity));
+                Logger?.Invoke(this, $"{debugInfo}: {CommonUtility.GetUserFriendlyMessage(curEntity)}");
             }
             catch (Exception exception)
             {
@@ -445,7 +441,7 @@ namespace Veritec.Dynamics.CI.Common
             if (entityMetaData == null)
                 return new ColumnSet(false);
 
-            if (entityMetaData.IsCustomEntity.Value || entityMetaData.LogicalName.Equals(Constant.DuplicateRule.EntityLogicalName, StringComparison.OrdinalIgnoreCase) ||
+            if (entityMetaData.LogicalName.Equals(Constant.DuplicateRule.EntityLogicalName, StringComparison.OrdinalIgnoreCase) ||
                 entityMetaData.LogicalName.Equals(Constant.Sla.EntityLogicalName, StringComparison.OrdinalIgnoreCase) ||
                 entityMetaData.LogicalName.Equals(Constant.Workflow.EntityLogicalName, StringComparison.OrdinalIgnoreCase))
 
@@ -720,27 +716,25 @@ namespace Veritec.Dynamics.CI.Common
 
             if (targetEntity != null)
             {
-                debugInfo = "Deactivating SLA related to the workflow";
+                // deactivating SLA related to the workflow
                 wfAndSlaUtility.DeactivateSlaRelatedToWorkflow(curEntity);
 
-                debugInfo = "Deactivatating SLA before importing SLA";
+                // deactivating SLA before importing SLA
                 wfAndSlaUtility.DeactivateSlaBeforeImportSla(curEntity);
 
-                //workflow in Target must be deactivated before it can be imported!
-                debugInfo = "Deactivating Workflow before importing workflow";
+                // workflow in target must be deactivated before it can be imported
                 wfAndSlaUtility.DeactivateWorkflowBeforeImportingWorkflow(targetEntity);
 
-                debugInfo = "Updating";
+                debugInfo = "Update";
                 OrganizationService.Update(curEntity);
             }
             else
             {
-                debugInfo = "Inserting";
+                debugInfo = "Insert";
                 OrganizationService.Create(curEntity);
             }
 
-            //activate the SLA in target only if it is active in source
-            debugInfo = "Activating SLA";
+            // activate the SLA or workflow in target only if it is active in source
             wfAndSlaUtility.ActivateSlaAfterImport(curEntityBeforeChange, curEntity);
 
             return true;
